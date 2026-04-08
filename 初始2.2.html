@@ -4820,7 +4820,7 @@
         
         function recallMessage() {
             const message = messages.find(m => m.id === selectedMessageId);
-            if (message && !message.recalled) {
+            if (message && !message.recalled && !message.pat) {
                 if (message.type === 'me') {
                     if (confirm('确定要撤回这条消息吗？')) {
                         performRecall(selectedMessageId);
@@ -5199,6 +5199,7 @@
             const menu = document.getElementById('contextMenu');
             const message = messages.find(m => m.id === selectedMessageId);
             if (!message || message.recalled) return;
+            if (message.pat) return;
             const recallItem = document.getElementById('recallMenuItem');
             if (recallItem) recallItem.style.display = (message.type === 'me' && !message.recalled) ? 'block' : 'none';
             document.querySelectorAll('.message-container').forEach(w => w.classList.remove('selected'));
@@ -5222,7 +5223,7 @@
         
         function quoteMessage() {
             const message = messages.find(m => m.id === selectedMessageId);
-            if (message && !message.recalled) {
+            if (message && !message.recalled && !message.pat) {
                 currentQuote = { id: message.id, type: message.type, content: message.content, sticker: message.sticker || null };
                 const author = message.type === 'me' ? config.myName : config.otherName;
                 const previewText = message.sticker ? '[表情包]' : (message.content.length > 50 ? message.content.substring(0, 50) + '...' : message.content);
@@ -5241,7 +5242,7 @@
         
         function copyMessage() {
             const message = messages.find(m => m.id === selectedMessageId);
-            if (message && !message.recalled) {
+            if (message && !message.recalled && !message.pat) {
                 navigator.clipboard.writeText(message.sticker ? '[表情包]' : message.content);
                 alert('已复制到剪贴板');
             }
@@ -5250,7 +5251,7 @@
         
         function deleteMessage() {
             const message = messages.find(m => m.id === selectedMessageId);
-            if (message && message.type === 'me' && !message.recalled && confirm('确定要删除这条消息吗？')) {
+            if (message && message.type === 'me' && !message.recalled && !message.pat && confirm('确定要删除这条消息吗？')) {
                 messages = messages.filter(m => m.id !== selectedMessageId);
                 const msgElement = document.getElementById(`msg-${selectedMessageId}`);
                 if (msgElement) msgElement.remove();
