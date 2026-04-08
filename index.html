@@ -2631,7 +2631,8 @@
                             <button class="btn-secondary" onclick="exportPokeLibrary()">导出拍一拍</button>
                             <button class="btn-secondary" onclick="document.getElementById('pokeImportInput').click()">导入拍一拍</button>
                         </div>
-                        <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;">拍一拍功能：点击输入框左侧的拍一拍按钮，可以选择预设动作发送给对方。</p>
+                        <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px;">点击输入框左侧的拍一拍按钮，可以选择预设动作发送给对方。</p>
+                        <p style="font-size: 12px; color: var(--text-tertiary);">在弹出的面板中点击"管理"可自定义我方和对方的拍一拍文案。</p>
                     </div>
                 </div>
 
@@ -2749,11 +2750,22 @@
                 </button>
             </div>
             <div class="poke-modal-body">
-                <div class="poke-input-group">
-                    <input type="text" class="poke-input" id="pokeInput" placeholder="输入新拍一拍文案...">
-                    <button class="poke-add-btn" onclick="addPokeText()">添加</button>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">我的拍一拍（发送）</h4>
+                    <div class="poke-input-group">
+                        <input type="text" class="poke-input" id="pokeInput" placeholder="输入新拍一拍文案...">
+                        <button class="poke-add-btn" onclick="addPokeText('my')">添加</button>
+                    </div>
+                    <div id="myPokeList"></div>
                 </div>
-                <div id="pokeList"></div>
+                <div>
+                    <h4 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">对方的拍一拍（随机触发）</h4>
+                    <div class="poke-input-group">
+                        <input type="text" class="poke-input" id="otherPokeInput" placeholder="输入新拍一拍文案...">
+                        <button class="poke-add-btn" onclick="addPokeText('other')">添加</button>
+                    </div>
+                    <div id="otherPokeList"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -2894,6 +2906,24 @@
             "拍了拍你的脸蛋",
             "热情地拍了拍你"
         ];
+
+        let myPokeLibrary = [
+            "拍了拍你",
+            "轻轻拍了拍你的肩膀",
+            "对你比了个大拇指",
+            "拍了拍你的脑袋",
+            "拍了拍你的脸蛋",
+            "热情地拍了拍你"
+        ];
+
+        let otherPokeLibrary = [
+            "拍了拍你",
+            "拍了拍你的肩膀",
+            "向你打了个招呼",
+            "拍了拍你的背",
+            "拍了拍你的头",
+            "友好地拍了拍你"
+        ];
         
         const apologyMessages = [
             "抱歉，刚才的消息发错了",
@@ -2963,13 +2993,21 @@
             timeFormat: '24h',
             showReadReceipt: true,
             readReceiptStyle: 'text',
-            pokeLibrary: [
+            myPokeLibrary: [
                 "拍了拍你",
                 "轻轻拍了拍你的肩膀",
                 "对你比了个大拇指",
                 "拍了拍你的脑袋",
                 "拍了拍你的脸蛋",
                 "热情地拍了拍你"
+            ],
+            otherPokeLibrary: [
+                "拍了拍你",
+                "拍了拍你的肩膀",
+                "向你打了个招呼",
+                "拍了拍你的背",
+                "拍了拍你的头",
+                "友好地拍了拍你"
             ]
         };
         
@@ -5011,7 +5049,7 @@
                 const typingDuration = Math.round((400 + Math.random() * 900) * getReplySpeedMultiplier());
                 setTimeout(() => {
                     if (Math.random() < OTHER_PAT_PROBABILITY) {
-                        const randomPoke = pokeLibrary[Math.floor(Math.random() * pokeLibrary.length)];
+                        const randomPoke = otherPokeLibrary[Math.floor(Math.random() * otherPokeLibrary.length)];
                         const patMessage = {
                             id: ++lastMessageId,
                             type: 'other',
@@ -5497,13 +5535,21 @@
                 timeFormat: '24h',
                 showReadReceipt: true,
                 readReceiptStyle: 'text',
-                pokeLibrary: [
+                myPokeLibrary: [
                     "拍了拍你",
                     "轻轻拍了拍你的肩膀",
                     "对你比了个大拇指",
                     "拍了拍你的脑袋",
                     "拍了拍你的脸蛋",
                     "热情地拍了拍你"
+                ],
+                otherPokeLibrary: [
+                    "拍了拍你",
+                    "拍了拍你的肩膀",
+                    "向你打了个招呼",
+                    "拍了拍你的背",
+                    "拍了拍你的头",
+                    "友好地拍了拍你"
                 ]
             };
             
@@ -5524,7 +5570,7 @@
                 "确实如此，我同意你的看法。",
                 "谢谢你的分享，这让我很受启发。"
             ];
-            pokeLibrary = [
+            myPokeLibrary = [
                 "拍了拍你",
                 "轻轻拍了拍你的肩膀",
                 "对你比了个大拇指",
@@ -5532,7 +5578,15 @@
                 "拍了拍你的脸蛋",
                 "热情地拍了拍你"
             ];
-            
+            otherPokeLibrary = [
+                "拍了拍你",
+                "拍了拍你的肩膀",
+                "向你打了个招呼",
+                "拍了拍你的背",
+                "拍了拍你的头",
+                "友好地拍了拍你"
+            ];
+
             currentQuote = null;
             selectedMessageId = null;
             
@@ -5645,8 +5699,8 @@
                     if (!config.bubblePresets) {
                         config.bubblePresets = [];
                     }
-                    if (!config.pokeLibrary || !Array.isArray(config.pokeLibrary) || config.pokeLibrary.length === 0) {
-                        config.pokeLibrary = [
+                    if (!config.myPokeLibrary || !Array.isArray(config.myPokeLibrary) || config.myPokeLibrary.length === 0) {
+                        config.myPokeLibrary = [
                             "拍了拍你",
                             "轻轻拍了拍你的肩膀",
                             "对你比了个大拇指",
@@ -5655,7 +5709,18 @@
                             "热情地拍了拍你"
                         ];
                     }
-                    pokeLibrary = config.pokeLibrary;
+                    if (!config.otherPokeLibrary || !Array.isArray(config.otherPokeLibrary) || config.otherPokeLibrary.length === 0) {
+                        config.otherPokeLibrary = [
+                            "拍了拍你",
+                            "拍了拍你的肩膀",
+                            "向你打了个招呼",
+                            "拍了拍你的背",
+                            "拍了拍你的头",
+                            "友好地拍了拍你"
+                        ];
+                    }
+                    myPokeLibrary = config.myPokeLibrary;
+                    otherPokeLibrary = config.otherPokeLibrary;
                 } catch(e) {}
             }
             const savedCards = localStorage.getItem('chat_cards');
@@ -6004,17 +6069,17 @@
         function renderPokePanel() {
             const grid = document.getElementById('pokeGrid');
             if (!grid) return;
-            if (pokeLibrary.length === 0) {
+            if (myPokeLibrary.length === 0) {
                 grid.innerHTML = '<div class="poke-empty">暂无拍一拍文案，点击管理添加</div>';
                 return;
             }
-            grid.innerHTML = pokeLibrary.map((poke, index) => `
+            grid.innerHTML = myPokeLibrary.map((poke, index) => `
                 <button class="poke-item" onclick="sendPoke(${index})">${escapeHtml(poke)}</button>
             `).join('');
         }
 
         function sendPoke(index) {
-            const pokeText = pokeLibrary[index];
+            const pokeText = myPokeLibrary[index];
             if (!pokeText) return;
             const message = createMyPatMessage(pokeText);
             messages.push(message);
@@ -6039,35 +6104,53 @@
         }
 
         function renderPokeList() {
-            const container = document.getElementById('pokeList');
-            if (!container) return;
-            if (pokeLibrary.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-tertiary); font-size: 13px;">暂无拍一拍文案</div>';
-                return;
+            const myContainer = document.getElementById('myPokeList');
+            const otherContainer = document.getElementById('otherPokeList');
+            if (myContainer) {
+                if (myPokeLibrary.length === 0) {
+                    myContainer.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-tertiary); font-size: 13px;">暂无我的拍一拍文案</div>';
+                } else {
+                    myContainer.innerHTML = myPokeLibrary.map((poke, index) => `
+                        <div class="poke-list-item">
+                            <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(poke)}</span>
+                            <div class="poke-list-item-actions">
+                                <button class="poke-list-item-btn edit" onclick="editPokeText('my', ${index})" title="编辑">✎</button>
+                                <button class="poke-list-item-btn delete" onclick="deletePokeText('my', ${index})" title="删除">×</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
             }
-            container.innerHTML = pokeLibrary.map((poke, index) => `
-                <div class="poke-list-item">
-                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(poke)}</span>
-                    <div class="poke-list-item-actions">
-                        <button class="poke-list-item-btn edit" onclick="editPokeText(${index})" title="编辑">✎</button>
-                        <button class="poke-list-item-btn delete" onclick="deletePokeText(${index})" title="删除">×</button>
-                    </div>
-                </div>
-            `).join('');
+            if (otherContainer) {
+                if (otherPokeLibrary.length === 0) {
+                    otherContainer.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-tertiary); font-size: 13px;">暂无对方的拍一拍文案</div>';
+                } else {
+                    otherContainer.innerHTML = otherPokeLibrary.map((poke, index) => `
+                        <div class="poke-list-item">
+                            <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(poke)}</span>
+                            <div class="poke-list-item-actions">
+                                <button class="poke-list-item-btn edit" onclick="editPokeText('other', ${index})" title="编辑">✎</button>
+                                <button class="poke-list-item-btn delete" onclick="deletePokeText('other', ${index})" title="删除">×</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
         }
 
-        function addPokeText() {
-            const input = document.getElementById('pokeInput');
+        function addPokeText(type) {
+            const input = id(type === 'my' ? 'pokeInput' : 'otherPokeInput');
             const text = input.value.trim();
             if (!text) {
                 alert('请输入拍一拍文案');
                 return;
             }
-            if (pokeLibrary.includes(text)) {
+            const library = type === 'my' ? myPokeLibrary : otherPokeLibrary;
+            if (library.includes(text)) {
                 alert('该文案已存在');
                 return;
             }
-            pokeLibrary.push(text);
+            library.push(text);
             savePokeLibrary();
             input.value = '';
             renderPokeList();
@@ -6075,29 +6158,29 @@
             alert('添加成功');
         }
 
-        let editingPokeIndex = null;
-
-        function editPokeText(index) {
-            const newText = prompt('修改拍一拍文案:', pokeLibrary[index]);
+        function editPokeText(type, index) {
+            const library = type === 'my' ? myPokeLibrary : otherPokeLibrary;
+            const newText = prompt('修改拍一拍文案:', library[index]);
             if (newText === null) return;
             const trimmedText = newText.trim();
             if (!trimmedText) {
                 alert('文案不能为空');
                 return;
             }
-            if (pokeLibrary.includes(trimmedText) && pokeLibrary[index] !== trimmedText) {
+            if (library.includes(trimmedText) && library[index] !== trimmedText) {
                 alert('该文案已存在');
                 return;
             }
-            pokeLibrary[index] = trimmedText;
+            library[index] = trimmedText;
             savePokeLibrary();
             renderPokeList();
             renderPokePanel();
         }
 
-        function deletePokeText(index) {
+        function deletePokeText(type, index) {
             if (confirm('确定要删除这条拍一拍文案吗？')) {
-                pokeLibrary.splice(index, 1);
+                const library = type === 'my' ? myPokeLibrary : otherPokeLibrary;
+                library.splice(index, 1);
                 savePokeLibrary();
                 renderPokeList();
                 renderPokePanel();
@@ -6105,25 +6188,25 @@
         }
 
         function savePokeLibrary() {
-            config.pokeLibrary = pokeLibrary;
+            config.myPokeLibrary = myPokeLibrary;
+            config.otherPokeLibrary = otherPokeLibrary;
             saveConfig();
         }
 
+        function id(str) {
+            return document.getElementById(str);
+        }
+
         function exportPokeLibrary() {
-            if (pokeLibrary.length === 0) {
-                alert('拍一拍库为空，无法导出');
-                return;
-            }
-            const exportData = {
+            const data = {
                 exportDate: new Date().toISOString(),
-                pokeCount: pokeLibrary.length,
-                pokes: pokeLibrary
+                myPokeLibrary: myPokeLibrary,
+                otherPokeLibrary: otherPokeLibrary
             };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            const filename = `拍一拍库_${timestamp}.json`;
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            downloadFile(blob, filename);
-            alert(`成功导出 ${pokeLibrary.length} 条拍一拍`);
+            downloadFile(blob, `拍一拍库_${timestamp}.json`);
+            alert(`成功导出我的 ${myPokeLibrary.length} 条，对方 ${otherPokeLibrary.length} 条拍一拍`);
         }
 
         function importPokeLibrary(event) {
@@ -6133,28 +6216,32 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    let newPokes = [];
-                    if (Array.isArray(data)) {
-                        newPokes = data;
-                    } else if (data.pokes && Array.isArray(data.pokes)) {
-                        newPokes = data.pokes;
-                    } else {
-                        alert('文件格式不正确');
-                        return;
+                    if (data.myPokeLibrary && Array.isArray(data.myPokeLibrary)) {
+                        const existingMySet = new Set(myPokeLibrary);
+                        let addedMy = 0;
+                        data.myPokeLibrary.forEach(poke => {
+                            if (poke && typeof poke === 'string' && poke.trim() && !existingMySet.has(poke)) {
+                                myPokeLibrary.push(poke);
+                                existingMySet.add(poke);
+                                addedMy++;
+                            }
+                        });
                     }
-                    const existingSet = new Set(pokeLibrary);
-                    let addedCount = 0;
-                    newPokes.forEach(poke => {
-                        if (poke && typeof poke === 'string' && poke.trim() && !existingSet.has(poke)) {
-                            pokeLibrary.push(poke);
-                            existingSet.add(poke);
-                            addedCount++;
-                        }
-                    });
+                    if (data.otherPokeLibrary && Array.isArray(data.otherPokeLibrary)) {
+                        const existingOtherSet = new Set(otherPokeLibrary);
+                        let addedOther = 0;
+                        data.otherPokeLibrary.forEach(poke => {
+                            if (poke && typeof poke === 'string' && poke.trim() && !existingOtherSet.has(poke)) {
+                                otherPokeLibrary.push(poke);
+                                existingOtherSet.add(poke);
+                                addedOther++;
+                            }
+                        });
+                    }
                     savePokeLibrary();
                     renderPokeList();
                     renderPokePanel();
-                    alert(`成功导入 ${addedCount} 条新拍一拍`);
+                    alert(`导入成功`);
                 } catch (err) {
                     alert('导入失败：文件格式错误');
                 }
