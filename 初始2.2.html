@@ -4329,103 +4329,92 @@
         
         function reRenderAllMessages() {
             const container = document.getElementById('chatContainer');
-            const elements = [];
+            container.innerHTML = '';
+            let lastDateText = '';
             
-            for (let i = messages.length - 1; i >= 0; i--) {
+            for (let i = 0; i < messages.length; i++) {
                 const msg = messages[i];
                 const msgDateText = getDateText(msg.time);
-                const prevMsg = i > 0 ? messages[i - 1] : null;
-                const prevDateText = prevMsg ? getDateText(prevMsg.time) : null;
                 
-                if (msgDateText !== prevDateText) {
-                    elements.push({ type: 'divider', date: msgDateText });
-                }
-                elements.push({ type: 'message', msg: msg });
-            }
-            
-            elements.reverse();
-            
-            container.innerHTML = '';
-            elements.forEach(el => {
-                if (el.type === 'divider') {
+                if (msgDateText !== lastDateText) {
                     const divider = document.createElement('div');
                     divider.className = 'time-divider';
-                    divider.innerHTML = '<span>' + el.date + '</span>';
+                    divider.innerHTML = '<span>' + msgDateText + '</span>';
                     container.appendChild(divider);
-                } else {
-                    const msg = el.msg;
-                    const wrapper = document.createElement('div');
-                    wrapper.id = `msg-${msg.id}`;
-                    
-                    if (msg.recalled) {
-                        wrapper.className = 'message-container recalled';
-                        wrapper.innerHTML = `<div class="message">${escapeHtml(recallText)}</div>`;
-                        container.appendChild(wrapper);
-                        return;
-                    }
-
-                    if (msg.pat) {
-                        wrapper.className = 'message-container pat-notice';
-                        wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
-                        container.appendChild(wrapper);
-                        return;
-                    }
-                    
-                    if (msg.isCallEnded) {
-                        wrapper.className = 'message-container pat-notice';
-                        wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
-                        container.appendChild(wrapper);
-                        return;
-                    }
-                    
-                    wrapper.className = `message-container ${msg.type === 'me' ? 'sent' : 'received'}`;
-                    
-                    if (config.showAvatar) wrapper.classList.add('with-avatar');
-                    
-                    const timeObj = formatTime(msg.time);
-                    let quoteHtml = '';
-                    if (msg.quote && msg.quote.content) {
-                        const author = msg.quote.type === 'me' ? config.myName : config.otherName;
-                        const quoteContent = msg.quote.sticker ? '[表情包]' : msg.quote.content;
-                        quoteHtml = `<div class="quote-wrapper"><div class="quote-content"><div class="quote-line"></div><div class="quote-text"><div class="quote-author">${escapeHtml(author)}</div><div>${escapeHtml(quoteContent.length > 80 ? quoteContent.substring(0, 80) + '...' : quoteContent)}</div></div></div></div>`;
-                    }
-                    
-                    let metaHtml = '';
-                    if (msg.type === 'me' && config.showReadReceipt) {
-                        if (config.readReceiptStyle === 'icon') {
-                            const icon = msg.read ? '✓✓' : '✓';
-                            metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}"><span class="read-status-icon ${msg.read ? 'read' : 'unread'}">${icon}</span></div>`;
-                        } else {
-                            const readStatus = msg.read ? '<span class="read-status read">已读</span>' : '<span class="read-status unread">未读</span>';
-                            metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}">${readStatus}</div>`;
-                        }
-                    }
-                    
-                    const avatarHtml = getAvatarHtml(msg.type);
-                    const bubbleClass = msg.sticker ? 'message-sticker' : `message ${msg.type === 'me' ? 'message-sent' : 'message-received'}`;
-                    const contentHtml = msg.sticker
-                        ? `<img class="message-sticker" src="${msg.sticker}" alt="表情包">`
-                        : `<div>${escapeHtml(msg.content)}</div>`;
-                    
-                    const timeBelowAvatar = getTimeBelowAvatarHtml(timeObj);
-                    
-                    wrapper.innerHTML = `
-                        <div class="message-avatar-wrapper">
-                            ${avatarHtml}
-                            ${timeBelowAvatar}
-                        </div>
-                        <div class="message-content ${msg.type === 'me' ? 'sent' : 'received'}">
-                            <div class="${bubbleClass}">
-                                ${quoteHtml}
-                                ${contentHtml}
-                            </div>
-                            ${metaHtml}
-                        </div>
-                    `;
-                    
-                    container.appendChild(wrapper);
+                    lastDateText = msgDateText;
                 }
-            });
+                
+                const wrapper = document.createElement('div');
+                wrapper.id = `msg-${msg.id}`;
+                
+                if (msg.recalled) {
+                    wrapper.className = 'message-container recalled';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(recallText)}</div>`;
+                    container.appendChild(wrapper);
+                    continue;
+                }
+
+                if (msg.pat) {
+                    wrapper.className = 'message-container pat-notice';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
+                    container.appendChild(wrapper);
+                    continue;
+                }
+                
+                if (msg.isCallEnded) {
+                    wrapper.className = 'message-container pat-notice';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
+                    container.appendChild(wrapper);
+                    continue;
+                }
+                
+                wrapper.className = `message-container ${msg.type === 'me' ? 'sent' : 'received'}`;
+                
+                if (config.showAvatar) wrapper.classList.add('with-avatar');
+                
+                const timeObj = formatTime(msg.time);
+                let quoteHtml = '';
+                if (msg.quote && msg.quote.content) {
+                    const author = msg.quote.type === 'me' ? config.myName : config.otherName;
+                    const quoteContent = msg.quote.sticker ? '[表情包]' : msg.quote.content;
+                    quoteHtml = `<div class="quote-wrapper"><div class="quote-content"><div class="quote-line"></div><div class="quote-text"><div class="quote-author">${escapeHtml(author)}</div><div>${escapeHtml(quoteContent.length > 80 ? quoteContent.substring(0, 80) + '...' : quoteContent)}</div></div></div></div>`;
+                }
+                
+                let metaHtml = '';
+                if (msg.type === 'me' && config.showReadReceipt) {
+                    if (config.readReceiptStyle === 'icon') {
+                        const icon = msg.read ? '✓✓' : '✓';
+                        metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}"><span class="read-status-icon ${msg.read ? 'read' : 'unread'}">${icon}</span></div>`;
+                    } else {
+                        const readStatus = msg.read ? '<span class="read-status read">已读</span>' : '<span class="read-status unread">未读</span>';
+                        metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}">${readStatus}</div>`;
+                    }
+                }
+                
+                const avatarHtml = getAvatarHtml(msg.type);
+                const bubbleClass = msg.sticker ? 'message-sticker' : `message ${msg.type === 'me' ? 'message-sent' : 'message-received'}`;
+                const contentHtml = msg.sticker
+                    ? `<img class="message-sticker" src="${msg.sticker}" alt="表情包">`
+                    : `<div>${escapeHtml(msg.content)}</div>`;
+                
+                const timeBelowAvatar = getTimeBelowAvatarHtml(timeObj);
+                
+                wrapper.innerHTML = `
+                    <div class="message-avatar-wrapper">
+                        ${avatarHtml}
+                        ${timeBelowAvatar}
+                    </div>
+                    <div class="message-content ${msg.type === 'me' ? 'sent' : 'received'}">
+                        <div class="${bubbleClass}">
+                            ${quoteHtml}
+                            ${contentHtml}
+                        </div>
+                        ${metaHtml}
+                    </div>
+                `;
+                
+                container.appendChild(wrapper);
+            }
             container.scrollTop = container.scrollHeight;
         }
         
@@ -5177,7 +5166,6 @@
             const container = document.getElementById('chatContainer');
             const existingWrapper = document.getElementById(`msg-${message.id}`);
             if (existingWrapper) existingWrapper.remove();
-            const wrapper = document.createElement('div');
             
             const messageDate = getDateText(message.time);
             const currentIndex = messages.findIndex(m => m.id === message.id);
@@ -5188,18 +5176,15 @@
                 const divider = document.createElement('div');
                 divider.className = 'time-divider';
                 divider.innerHTML = '<span>' + messageDate + '</span>';
-                const prevWrapper = prevMessage ? document.getElementById(`msg-${prevMessage.id}`) : null;
-                if (prevWrapper) {
-                    container.insertBefore(divider, prevWrapper);
-                } else {
-                    container.insertBefore(divider, container.firstChild);
-                }
+                container.appendChild(divider);
             }
             
-            if (message.recalled) {
-            wrapper.className = 'message-container recalled';
+            const wrapper = document.createElement('div');
             wrapper.id = `msg-${message.id}`;
-            wrapper.innerHTML = `<div class="message">${escapeHtml(recallText)}</div>`;
+            
+            if (message.recalled) {
+                wrapper.className = 'message-container recalled';
+                wrapper.innerHTML = `<div class="message">${escapeHtml(recallText)}</div>`;
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
                 return;
@@ -5207,7 +5192,6 @@
 
             if (message.pat) {
                 wrapper.className = 'message-container pat-notice';
-                wrapper.id = `msg-${message.id}`;
                 wrapper.innerHTML = `<div class="message">${escapeHtml(message.content)}</div>`;
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
@@ -5216,7 +5200,6 @@
             
             if (message.isCallEnded) {
                 wrapper.className = 'message-container pat-notice';
-                wrapper.id = `msg-${message.id}`;
                 wrapper.innerHTML = `<div class="message">${escapeHtml(message.content)}</div>`;
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
@@ -5224,7 +5207,6 @@
             }
             
             wrapper.className = `message-container ${message.type === 'me' ? 'sent' : 'received'}`;
-            wrapper.id = `msg-${message.id}`;
             
             wrapper.addEventListener('mousedown', handleLongPress);
             wrapper.addEventListener('touchstart', handleLongPress, {passive: true});
