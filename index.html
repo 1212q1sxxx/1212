@@ -3927,7 +3927,6 @@
             const msg = createRandomOtherMessage(content);
 
             messages.push(msg);
-            updateTimeDividerText(msg.time);
             renderMessage(msg);
             saveToStorage();
         }
@@ -4330,17 +4329,89 @@
         
         function reRenderAllMessages() {
             const container = document.getElementById('chatContainer');
-            const timeDivider = container.querySelector('.time-divider');
-            container.innerHTML = '';
-            if (timeDivider) {
-                const dateText = messages.length > 0 ? getDateText(messages[0].time) : '今日';
-                container.innerHTML = '<div class="time-divider"><span>' + dateText + '</span></div>';
-            } else {
-                container.innerHTML = '<div class="time-divider"><span>今日</span></div>';
-            }
+            container.innerHTML = '<div class="time-divider"><span>今日</span></div>';
+            let lastDateText = '今日';
             messages.forEach(msg => {
-                renderMessage(msg);
+                const msgDateText = getDateText(msg.time);
+                if (msgDateText !== lastDateText) {
+                    const divider = document.createElement('div');
+                    divider.className = 'time-divider';
+                    divider.innerHTML = '<span>' + msgDateText + '</span>';
+                    container.appendChild(divider);
+                    lastDateText = msgDateText;
+                }
+                const wrapper = document.createElement('div');
+                wrapper.id = `msg-${msg.id}`;
+                
+                if (msg.recalled) {
+                    wrapper.className = 'message-container recalled';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(recallText)}</div>`;
+                    container.appendChild(wrapper);
+                    return;
+                }
+
+                if (msg.pat) {
+                    wrapper.className = 'message-container pat-notice';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
+                    container.appendChild(wrapper);
+                    return;
+                }
+                
+                if (msg.isCallEnded) {
+                    wrapper.className = 'message-container pat-notice';
+                    wrapper.innerHTML = `<div class="message">${escapeHtml(msg.content)}</div>`;
+                    container.appendChild(wrapper);
+                    return;
+                }
+                
+                wrapper.className = `message-container ${msg.type === 'me' ? 'sent' : 'received'}`;
+                
+                if (config.showAvatar) wrapper.classList.add('with-avatar');
+                
+                const timeObj = formatTime(msg.time);
+                let quoteHtml = '';
+                if (msg.quote && msg.quote.content) {
+                    const author = msg.quote.type === 'me' ? config.myName : config.otherName;
+                    const quoteContent = msg.quote.sticker ? '[表情包]' : msg.quote.content;
+                    quoteHtml = `<div class="quote-wrapper"><div class="quote-content"><div class="quote-line"></div><div class="quote-text"><div class="quote-author">${escapeHtml(author)}</div><div>${escapeHtml(quoteContent.length > 80 ? quoteContent.substring(0, 80) + '...' : quoteContent)}</div></div></div></div>`;
+                }
+                
+                let metaHtml = '';
+                if (msg.type === 'me' && config.showReadReceipt) {
+                    if (config.readReceiptStyle === 'icon') {
+                        const icon = msg.read ? '✓✓' : '✓';
+                        metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}"><span class="read-status-icon ${msg.read ? 'read' : 'unread'}">${icon}</span></div>`;
+                    } else {
+                        const readStatus = msg.read ? '<span class="read-status read">已读</span>' : '<span class="read-status unread">未读</span>';
+                        metaHtml = `<div class="message-meta ${msg.type === 'me' ? 'sent' : 'received'}">${readStatus}</div>`;
+                    }
+                }
+                
+                const avatarHtml = getAvatarHtml(msg.type);
+                const bubbleClass = msg.sticker ? 'message-sticker' : `message ${msg.type === 'me' ? 'message-sent' : 'message-received'}`;
+                const contentHtml = msg.sticker
+                    ? `<img class="message-sticker" src="${msg.sticker}" alt="表情包">`
+                    : `<div>${escapeHtml(msg.content)}</div>`;
+                
+                const timeBelowAvatar = getTimeBelowAvatarHtml(timeObj);
+                
+                wrapper.innerHTML = `
+                    <div class="message-avatar-wrapper">
+                        ${avatarHtml}
+                        ${timeBelowAvatar}
+                    </div>
+                    <div class="message-content ${msg.type === 'me' ? 'sent' : 'received'}">
+                        <div class="${bubbleClass}">
+                            ${quoteHtml}
+                            ${contentHtml}
+                        </div>
+                        ${metaHtml}
+                    </div>
+                `;
+                
+                container.appendChild(wrapper);
             });
+            container.scrollTop = container.scrollHeight;
         }
         
         function updateOtherAvatarDisplay() {
@@ -4601,7 +4672,6 @@
                 recalled: false
             };
             messages.push(message);
-            updateTimeDividerText(message.time);
             renderMessage(message);
             cancelQuote();
             saveToStorage();
@@ -4999,7 +5069,6 @@
                 recalled: false
             };
             messages.push(message);
-            updateTimeDividerText(message.time);
             renderMessage(message);
             input.value = '';
             input.style.height = 'auto';
@@ -5059,7 +5128,6 @@
                             pat: true
                         };
                         messages.push(patMessage);
-                        updateTimeDividerText(patMessage.time);
                         renderMessage(patMessage);
                         saveToStorage();
                         hideTyping();
@@ -5081,7 +5149,6 @@
                 setTimeout(() => {
                     const reply = createSequentialReplyMessage(content);
                     messages.push(reply);
-                    updateTimeDividerText(reply.time);
                     renderMessage(reply);
                     saveToStorage();
                     if (index === selectedCards.length - 1) {
@@ -5096,6 +5163,17 @@
             const existingWrapper = document.getElementById(`msg-${message.id}`);
             if (existingWrapper) existingWrapper.remove();
             const wrapper = document.createElement('div');
+            
+            const messageDate = getDateText(message.time);
+            const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+            const lastDate = lastMessage ? getDateText(lastMessage.time) : null;
+            
+            if (messageDate !== lastDate) {
+                const divider = document.createElement('div');
+                divider.className = 'time-divider';
+                divider.innerHTML = '<span>' + messageDate + '</span>';
+                container.appendChild(divider);
+            }
             
             if (message.recalled) {
             wrapper.className = 'message-container recalled';
@@ -5735,7 +5813,7 @@
                 try {
                     const parsedMessages = JSON.parse(savedMessages);
                     messages = parsedMessages.map(msg => ({ ...msg, time: new Date(msg.time) }));
-                    messages.forEach(msg => renderMessage(msg));
+                    reRenderAllMessages();
                 } catch(e) {}
             }
         }
@@ -6084,7 +6162,6 @@
             if (!pokeText) return;
             const message = createMyPatMessage(pokeText);
             messages.push(message);
-            updateTimeDividerText(message.time);
             renderMessage(message);
             togglePokePanel(false);
             toggleStickerPanel(false);
