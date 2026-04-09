@@ -4642,7 +4642,7 @@
                 otherGrid.innerHTML = `<div class="sticker-empty" style="grid-column: 1 / -1;">暂无</div>`;
             } else {
                 otherGrid.innerHTML = otherStickerLibrary.map((sticker, index) => `
-                    <button class="sticker-item" onclick="sendSticker(-${index - 1})" title="发送表情包"><img src="${sticker.data}" alt="表情包 ${index + 1}"></button>
+                    <button class="sticker-item" onclick="sendSticker(${-(index + 1)})" title="发送表情包"><img src="${sticker.data}" alt="表情包 ${index + 1}"></button>
                 `).join('');
             }
         }
