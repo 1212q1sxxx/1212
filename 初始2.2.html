@@ -631,6 +631,18 @@
             max-height: 220px;
             overflow-y: auto;
         }
+        .sticker-section {
+            margin-bottom: 12px;
+        }
+        .sticker-section:last-child {
+            margin-bottom: 0;
+        }
+        .sticker-section-title {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
         .sticker-item,
         .sticker-upload-trigger {
             aspect-ratio: 1;
@@ -2215,7 +2227,14 @@
                     <button class="btn-text" onclick="toggleStickerPanel(false)">收起</button>
                 </div>
             </div>
-            <div class="sticker-grid" id="stickerGrid"></div>
+            <div class="sticker-section">
+                <div class="sticker-section-title">我的表情包</div>
+                <div class="sticker-grid" id="stickerGrid"></div>
+            </div>
+            <div class="sticker-section">
+                <div class="sticker-section-title">对方表情包</div>
+                <div class="sticker-grid" id="otherStickerGrid"></div>
+            </div>
         </div>
         <div class="poke-panel" id="pokePanel">
             <div class="poke-panel-header">
@@ -2625,6 +2644,18 @@
                     </div>
 
                     <div class="setting-section">
+                        <h4>对方表情包库</h4>
+                        <input type="file" class="file-input" id="otherStickerInput" accept="image/*" multiple onchange="handleOtherStickerUpload(event)">
+                        <div class="card-actions">
+                            <button class="btn-secondary" onclick="document.getElementById('otherStickerInput').click()">上传表情包</button>
+                            <button class="btn-secondary" onclick="clearOtherStickerLibrary()">清空表情包</button>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;">对方发送消息时会从此库中随机选择表情包发送给您。</p>
+                        <div class="sticker-library-grid" id="otherStickerLibraryGrid"></div>
+                        <div class="sticker-library-empty" id="otherStickerLibraryEmpty">暂无对方表情包</div>
+                    </div>
+
+                    <div class="setting-section">
                         <h4>拍一拍库</h4>
                         <input type="file" class="file-input" id="pokeImportInput" accept=".json" onchange="importPokeLibrary(event)">
                         <div class="card-actions">
@@ -2809,12 +2840,12 @@
             });
         }
 
-        async function addSticker(dataURL) {
+        async function addSticker(dataURL, type = 'my') {
             if (!db) await initDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction([STICKER_STORE], 'readwrite');
                 const store = transaction.objectStore(STICKER_STORE);
-                const request = store.add({ data: dataURL, addedAt: Date.now() });
+                const request = store.add({ data: dataURL, addedAt: Date.now(), type: type });
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => resolve(request.result);
             });
@@ -2934,6 +2965,7 @@
         ];
         
         let stickerLibrary = [];
+        let otherStickerLibrary = [];
 
         let messages = [];
         let lastMessageId = 0;
@@ -3049,6 +3081,7 @@
             loadFromStorage();
             renderCardLibrary();
             renderStickerLibrary();
+            renderOtherStickerLibrary();
             renderStickerPanel();
             renderPokePanel();
             setupEventListeners();
@@ -3096,10 +3129,19 @@
         async function loadStickersFromDB() {
             try {
                 const stickers = await getAllStickers();
-                stickerLibrary = stickers.map(s => ({ id: s.id, data: s.data }));
+                stickerLibrary = [];
+                otherStickerLibrary = [];
+                stickers.forEach(s => {
+                    if (s.type === 'other') {
+                        otherStickerLibrary.push({ id: s.id, data: s.data });
+                    } else {
+                        stickerLibrary.push({ id: s.id, data: s.data });
+                    }
+                });
             } catch (e) {
                 console.warn('从 IndexedDB 加载表情包失败:', e);
                 stickerLibrary = [];
+                otherStickerLibrary = [];
             }
         }
         
@@ -3826,8 +3868,8 @@
         }
 
         function createOtherStickerMessage() {
-            if (!stickerLibrary.length) return null;
-            const stickerObj = stickerLibrary[Math.floor(Math.random() * stickerLibrary.length)];
+            if (!otherStickerLibrary.length) return null;
+            const stickerObj = otherStickerLibrary[Math.floor(Math.random() * otherStickerLibrary.length)];
             return {
                 id: ++lastMessageId,
                 type: 'other',
@@ -3850,7 +3892,7 @@
         }
 
         function createRandomOtherMessage(fallbackText = '我来看看你～') {
-            const canSendSticker = stickerLibrary.length > 0 && Math.random() < OTHER_STICKER_PROBABILITY;
+            const canSendSticker = otherStickerLibrary.length > 0 && Math.random() < OTHER_STICKER_PROBABILITY;
             if (canSendSticker) {
                 return createOtherStickerMessage();
             }
@@ -3871,7 +3913,7 @@
         }
 
         function createSequentialReplyMessage(textContent) {
-            const sendSticker = stickerLibrary.length > 0 && Math.random() < OTHER_STICKER_PROBABILITY;
+            const sendSticker = otherStickerLibrary.length > 0 && Math.random() < OTHER_STICKER_PROBABILITY;
             if (sendSticker) {
                 return createOtherStickerMessage();
             }
@@ -4573,26 +4615,36 @@
 
         function renderStickerPanel() {
             const grid = document.getElementById('stickerGrid');
+            const otherGrid = document.getElementById('otherStickerGrid');
             const count = document.getElementById('stickerPanelCount');
-            if (!grid || !count) return;
-            count.textContent = `${stickerLibrary.length} 张`;
-            if (!stickerLibrary.length) {
+            if (!grid || !otherGrid || !count) return;
+            
+            const totalCount = stickerLibrary.length + otherStickerLibrary.length;
+            count.textContent = `${totalCount} 张`;
+            
+            if (stickerLibrary.length === 0 && otherStickerLibrary.length === 0) {
                 grid.innerHTML = `
-                    <label class="sticker-upload-trigger" for="stickerInput">
-                        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                        <span>上传</span>
-                    </label>
-                    <div class="sticker-empty">暂无表情包，去设置里或点这里上传图片</div>
+                    <div class="sticker-empty" style="grid-column: 1 / -1;">暂无表情包</div>
                 `;
+                otherGrid.innerHTML = '';
                 return;
             }
-            grid.innerHTML = `
-                <label class="sticker-upload-trigger" for="stickerInput">
-                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    <span>上传</span>
-                </label>
-                ${stickerLibrary.map((sticker, index) => `<button class="sticker-item" onclick="sendSticker(${index})" title="发送表情包"><img src="${sticker.data}" alt="表情包 ${index + 1}"></button>`).join('')}
-            `;
+            
+            if (stickerLibrary.length === 0) {
+                grid.innerHTML = `<div class="sticker-empty" style="grid-column: 1 / -1;">暂无</div>`;
+            } else {
+                grid.innerHTML = stickerLibrary.map((sticker, index) => `
+                    <button class="sticker-item" onclick="sendSticker(${index})" title="发送表情包"><img src="${sticker.data}" alt="表情包 ${index + 1}"></button>
+                `).join('');
+            }
+            
+            if (otherStickerLibrary.length === 0) {
+                otherGrid.innerHTML = `<div class="sticker-empty" style="grid-column: 1 / -1;">暂无</div>`;
+            } else {
+                otherGrid.innerHTML = otherStickerLibrary.map((sticker, index) => `
+                    <button class="sticker-item" onclick="sendSticker(-${index - 1})" title="发送表情包"><img src="${sticker.data}" alt="表情包 ${index + 1}"></button>
+                `).join('');
+            }
         }
 
         function renderStickerLibrary() {
@@ -4661,8 +4713,59 @@
             event.target.value = '';
         }
 
+        function handleOtherStickerUpload(event) {
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            if (!imageFiles.length) {
+                alert('请选择图片文件');
+                event.target.value = '';
+                return;
+            }
+            const validFiles = imageFiles.filter(file => file.size <= 5 * 1024 * 1024);
+            const skippedCount = imageFiles.length - validFiles.length;
+            if (!validFiles.length) {
+                alert('所选图片均超过 5MB，无法上传');
+                event.target.value = '';
+                return;
+            }
+            let loadedCount = 0;
+            let addedCount = 0;
+            validFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const result = e.target.result;
+                    const existingData = otherStickerLibrary.map(s => s.data);
+                    if (!existingData.includes(result)) {
+                        try {
+                            const id = await addSticker(result, 'other');
+                            otherStickerLibrary.push({ id, data: result });
+                            addedCount++;
+                        } catch (err) {
+                            console.warn('表情包存储失败:', err);
+                        }
+                    }
+                    loadedCount++;
+                    if (loadedCount === validFiles.length) {
+                        renderOtherStickerLibrary();
+                        saveToStorage();
+                        let msg = `成功上传 ${addedCount} 张对方表情包`;
+                        if (skippedCount > 0) msg += `，${skippedCount} 张超过 5MB 已跳过`;
+                        alert(msg);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        }
+
         function sendSticker(index) {
-            const stickerObj = stickerLibrary[index];
+            let stickerObj;
+            if (index >= 0) {
+                stickerObj = stickerLibrary[index];
+            } else {
+                stickerObj = otherStickerLibrary[-index - 1];
+            }
             if (!stickerObj) return;
             const message = {
                 id: ++lastMessageId,
@@ -4706,6 +4809,48 @@
                 clearAllStickers().catch(err => console.warn('清空表情包库失败:', err));
                 toggleStickerPanel(false);
                 alert('表情包库已清空');
+            }
+        }
+
+        function clearOtherStickerLibrary() {
+            if (!otherStickerLibrary.length) {
+                alert('对方表情包库为空');
+                return;
+            }
+            if (confirm('确定要清空所有对方表情包吗？')) {
+                otherStickerLibrary = [];
+                renderOtherStickerLibrary();
+                alert('对方表情包库已清空');
+            }
+        }
+
+        function renderOtherStickerLibrary() {
+            const grid = document.getElementById('otherStickerLibraryGrid');
+            const empty = document.getElementById('otherStickerLibraryEmpty');
+            if (!grid || !empty) return;
+            if (!otherStickerLibrary.length) {
+                grid.innerHTML = '';
+                empty.style.display = 'block';
+                renderStickerPanel();
+                return;
+            }
+            empty.style.display = 'none';
+            grid.innerHTML = otherStickerLibrary.map((sticker, index) => `
+                <div class="sticker-library-card">
+                    <img src="${sticker.data}" alt="表情包 ${index + 1}">
+                    <button class="sticker-library-delete" onclick="deleteOtherSticker(${index})" title="删除">×</button>
+                </div>
+            `).join('');
+            renderStickerPanel();
+        }
+
+        function deleteOtherSticker(index) {
+            const sticker = otherStickerLibrary[index];
+            if (!sticker) return;
+            if (confirm('确定要删除这张表情包吗？')) {
+                const stickerId = sticker.id;
+                otherStickerLibrary.splice(index, 1);
+                renderOtherStickerLibrary();
             }
         }
 
@@ -5640,6 +5785,7 @@
             messages = [];
             lastMessageId = 0;
             stickerLibrary = [];
+            otherStickerLibrary = [];
             cardLibrary = [
                 "收到，我会认真考虑的。",
                 "嗯，你说得很有道理。",
@@ -5693,6 +5839,7 @@
             applyConfig();
             renderCardLibrary();
             renderStickerLibrary();
+            renderOtherStickerLibrary();
             renderStickerPanel();
             renderPokePanel();
             applyTheme();
